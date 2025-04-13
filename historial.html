@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Historial de Registros</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+      :root {
+        --primary-color: #0d6efd;
+        --secondary-color: #6c757d;
+        --light-gray: #f8f9fa;
+      }
+      
+      body {
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      
+      /* Navbar estilo FECOR */
+      .navbar-fecor {
+        background-color: #0d6efd;
+        padding: 10px 0;
+      }
+      
+      .navbar-fecor .navbar-brand,
+      .navbar-fecor .nav-link {
+        color: white !important;
+      }
+      
+      .navbar-fecor .navbar-brand {
+        font-weight: bold;
+      }
+      
+      /* Contenedor principal */
+      .main-container {
+        max-width: 100%;
+        padding: 0 15px;
+        margin-top: 15px;
+      }
+      
+      /* Encabezado de historial */
+      .historial-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .historial-title {
+        display: flex;
+        align-items: center;
+        color: #333;
+        font-weight: 500;
+      }
+      
+      .historial-icon {
+        color: #0d6efd;
+        margin-right: 10px;
+        font-size: 20px;
+      }
+      
+      /* Controles de la tabla */
+      .table-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+      
+      .entries-control {
+        display: flex;
+        align-items: center;
+      }
+      
+      .entries-control label {
+        margin-right: 5px;
+      }
+      
+      .entries-control select {
+        margin: 0 5px;
+        width: 60px;
+      }
+      
+      .search-control {
+        display: flex;
+        align-items: center;
+      }
+      
+      .search-control label {
+        margin-right: 5px;
+      }
+      
+      /* Tabla de registros */
+      .table-container {
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+      }
+      
+      .table {
+        margin-bottom: 0;
+        width: 100%;
+      }
+      
+      .table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 500;
+      }
+      
+      .table td, .table th {
+        padding: 10px;
+        vertical-align: middle;
+      }
+      
+      /* Paginación */
+      .pagination-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+      }
+      
+      .showing-entries {
+        color: #6c757d;
+        font-size: 14px;
+      }
+      
+      .pagination {
+        margin: 0;
+      }
+      
+      /* Botones de exportación */
+      .btn-excel {
+        background-color: #1e7e34;
+        color: white;
+      }
+      
+      .btn-pdf {
+        background-color: #dc3545;
+        color: white;
+      }
+      
+      /* No data message */
+      .no-data {
+        padding: 30px;
+        text-align: center;
+        color: #6c757d;
+        font-style: italic;
+      }
+      
+      /* Loading indicator */
+      .loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        display: none;
+      }
+      
+      /* Responsive */
+      @media (max-width: 768px) {
+        .historial-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .export-buttons {
+          margin-top: 10px;
+        }
+        
+        .table-controls {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .search-control {
+          margin-top: 10px;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  
+  <body>
+    <!-- Navbar estilo FECOR -->
+    <nav class="navbar navbar-expand-lg navbar-fecor">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">
+          <strong>FECOR</strong> Sistema de Registro
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="<?= ScriptApp.getService().getUrl(); ?>?action=formulario">
+                <i class="fas fa-file-alt"></i> Formulario
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="<?= ScriptApp.getService().getUrl(); ?>?action=historial">
+                <i class="fas fa-history"></i> Historial
+              </a>
+            </li>
+          </ul>
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <span class="nav-link">
+                <i class="fas fa-user"></i> <span id="username"></span> (Usuario)
+              </span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" id="btnLogout">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="main-container">
+      <div class="historial-header">
+        <div class="historial-title">
+          <i class="fas fa-history historial-icon"></i>
+          <h4>Historial de Registros</h4>
+        </div>
+        <div class="export-buttons">
+          <button class="btn btn-excel me-2" id="btnExportExcel">
+            <i class="fas fa-file-excel"></i> Excel
+          </button>
+          <button class="btn btn-pdf" id="btnExportPDF">
+            <i class="fas fa-file-pdf"></i> PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="table-controls">
+        <div class="entries-control">
+          <label>Mostrar</label>
+          <select class="form-select form-select-sm" id="entriesSelect">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <label>registros</label>
+        </div>
+        <div class="search-control">
+          <label>Buscar:</label>
+          <input type="text" class="form-control form-control-sm" id="searchInput">
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Fecha de Registro</th>
+              <th>Usuario Creador</th>
+              <th>Carpeta Fiscal</th>
+              <th>Fiscalía</th>
+              <th>Unidad de Inteligencia</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Los datos se cargarán dinámicamente -->
+          </tbody>
+        </table>
+        
+        <div id="noDataMessage" class="no-data">
+          Ningún dato disponible en esta tabla
+        </div>
+        
+        <div class="pagination-info">
+          <div class="showing-entries" id="showingEntries">
+            Mostrando registros del 0 al 0 de un total de 0 registros
+          </div>
+          <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm">
+              <li class="page-item disabled">
+                <a class="page-link" href="#" id="prevPageBtn">Anterior</a>
+              </li>
+              <li class="page-item disabled">
+                <a class="page-link" href="#" id="nextPageBtn">Siguiente</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div class="loading" id="loadingIndicator">
+      <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+      // Variables globales
+      let allData = [];
+      let filteredData = [];
+      let currentPage = 0;
+      let entriesPerPage = 10;
+      let totalPages = 0;
+      
+      // Elementos DOM
+      const tableBody = document.getElementById('tableBody');
+      const noDataMessage = document.getElementById('noDataMessage');
+      const showingEntries = document.getElementById('showingEntries');
+      const prevPageBtn = document.getElementById('prevPageBtn');
+      const nextPageBtn = document.getElementById('nextPageBtn');
+      const entriesSelect = document.getElementById('entriesSelect');
+      const searchInput = document.getElementById('searchInput');
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      
+      // Función de inicialización
+      document.addEventListener('DOMContentLoaded', function() {
+        // Cargar información del usuario
+        cargarInfoUsuario();
+        
+        // Cargar datos
+        cargarHistorial();
+        
+        // Event listeners
+        entriesSelect.addEventListener('change', function() {
+          entriesPerPage = parseInt(this.value);
+          currentPage = 0;
+          renderTable();
+        });
+        
+        searchInput.addEventListener('input', function() {
+          filterData();
+          currentPage = 0;
+          renderTable();
+        });
+        
+        prevPageBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (currentPage > 0) {
+            currentPage--;
+            renderTable();
+          }
+        });
+        
+        nextPageBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (currentPage < totalPages - 1) {
+            currentPage++;
+            renderTable();
+          }
+        });
+        
+        // Manejar exportación a Excel
+        document.getElementById('btnExportExcel').addEventListener('click', function() {
+          showLoading();
+          google.script.run
+            .withSuccessHandler(function(result) {
+              hideLoading();
+              if (result.success) {
+                downloadFile(result.data, result.fileName, result.mimeType);
+              } else {
+                alert('Error al exportar a Excel: ' + result.message);
+              }
+            })
+            .withFailureHandler(function(error) {
+              hideLoading();
+              alert('Error al exportar a Excel: ' + error.message);
+            })
+            .exportToExcel();
+        });
+        
+        // Manejar exportación a PDF
+        document.getElementById('btnExportPDF').addEventListener('click', function() {
+          showLoading();
+          google.script.run
+            .withSuccessHandler(function(result) {
+              hideLoading();
+              if (result.success) {
+                downloadFile(result.data, result.fileName, result.mimeType);
+              } else {
+                alert('Error al exportar a PDF: ' + result.message);
+              }
+            })
+            .withFailureHandler(function(error) {
+              hideLoading();
+              alert('Error al exportar a PDF: ' + error.message);
+            })
+            .exportToPDF();
+        });
+        
+        // Manejar cierre de sesión
+        document.getElementById('btnLogout').addEventListener('click', function() {
+          showLoading();
+          google.script.run
+            .withSuccessHandler(function(result) {
+              if (result.success) {
+                window.top.location.href = result.url || '<?= ScriptApp.getService().getUrl(); ?>';
+              } else {
+                hideLoading();
+                alert('Error al cerrar sesión: ' + result.message);
+              }
+            })
+            .withFailureHandler(function(error) {
+              hideLoading();
+              alert('Error al cerrar sesión: ' + error.message);
+            })
+            .logout();
+        });
+      });
+      
+      // Función para cargar información del usuario
+      function cargarInfoUsuario() {
+        google.script.run
+          .withSuccessHandler(function(userData) {
+            if (userData) {
+              document.getElementById('username').textContent = userData.username;
+            } else {
+              // Si no hay datos de usuario, redirigir al login
+              window.top.location.href = '<?= ScriptApp.getService().getUrl(); ?>';
+            }
+          })
+          .withFailureHandler(function(error) {
+            console.error("Error al cargar información de usuario:", error);
+            window.top.location.href = '<?= ScriptApp.getService().getUrl(); ?>';
+          })
+          .getUserSession();
+      }
+      
+      // Función para cargar el historial
+      function cargarHistorial() {
+        showLoading();
+        // Intentar obtener registros con la nueva función
+        google.script.run
+          .withSuccessHandler(function(data) {
+            hideLoading();
+            console.log("Datos obtenidos con getUserCasos:", data);
+            
+            if (data && data.length > 0) {
+              processData(data);
+            } else {
+              // Si no se obtienen datos, intentar con getAllCasos como fallback
+              showLoading();
+              google.script.run
+                .withSuccessHandler(function(allData) {
+                  hideLoading();
+                  console.log("Datos obtenidos con getAllCasos:", allData);
+                  processData(allData);
+                })
+                .withFailureHandler(function(error) {
+                  hideLoading();
+                  console.error("Error al obtener todos los casos:", error);
+                  noDataMessage.style.display = 'block';
+                  tableBody.innerHTML = '';
+                })
+                .getAllCasos();
+            }
+          })
+          .withFailureHandler(function(error) {
+            hideLoading();
+            console.error("Error al obtener casos de usuario:", error);
+            // Intentar con getAllCasos como fallback
+            showLoading();
+            google.script.run
+              .withSuccessHandler(function(allData) {
+                hideLoading();
+                console.log("Datos obtenidos con getAllCasos:", allData);
+                processData(allData);
+              })
+              .withFailureHandler(function(error) {
+                hideLoading();
+                console.error("Error al obtener todos los casos:", error);
+                noDataMessage.style.display = 'block';
+                tableBody.innerHTML = '';
+              })
+              .getAllCasos();
+          })
+          .getUserCasos();
+      }
+      
+      // Función para procesar los datos recibidos
+      function processData(data) {
+        if (!data || data.length === 0) {
+          noDataMessage.style.display = 'block';
+          tableBody.innerHTML = '';
+          showingEntries.textContent = 'Mostrando registros del 0 al 0 de un total de 0 registros';
+          return;
+        }
+        
+        allData = data;
+        filterData();
+        renderTable();
+      }
+      
+      // Función para filtrar datos según el término de búsqueda
+      function filterData() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        if (!searchTerm) {
+          filteredData = [...allData];
+          return;
+        }
+        
+        filteredData = allData.filter(function(item) {
+          return Object.values(item).some(function(value) {
+            return value && value.toString().toLowerCase().includes(searchTerm);
+          });
+        });
+      }
+      
+      // Función para renderizar la tabla
+      function renderTable() {
+        // Calcular total de páginas
+        totalPages = Math.ceil(filteredData.length / entriesPerPage);
+        
+        // Ajustar página actual si es necesario
+        if (currentPage >= totalPages && totalPages > 0) {
+          currentPage = totalPages - 1;
+        }
+        
+        // Obtener los elementos a mostrar en la página actual
+        const startIndex = currentPage * entriesPerPage;
+        const endIndex = Math.min(startIndex + entriesPerPage, filteredData.length);
+        const pageData = filteredData.slice(startIndex, endIndex);
+        
+        // Actualizar información de paginación
+        showingEntries.textContent = filteredData.length > 0 
+          ? `Mostrando registros del ${startIndex + 1} al ${endIndex} de un total de ${filteredData.length} registros`
+          : 'Mostrando registros del 0 al 0 de un total de 0 registros';
+        
+        // Actualizar botones de paginación
+        prevPageBtn.parentElement.classList.toggle('disabled', currentPage === 0);
+        nextPageBtn.parentElement.classList.toggle('disabled', currentPage >= totalPages - 1);
+        
+        // Limpiar tabla
+        tableBody.innerHTML = '';
+        
+        if (pageData.length === 0) {
+          noDataMessage.style.display = 'block';
+          return;
+        }
+        
+        noDataMessage.style.display = 'none';
+        
+        // Rellenar tabla con datos
+        pageData.forEach(function(item) {
+          const row = document.createElement('tr');
+          
+          // Fecha de Registro
+          const cellFecha = document.createElement('td');
+          cellFecha.textContent = item['Fecha de Registro'] || '';
+          row.appendChild(cellFecha);
+          
+          // Usuario Creador
+          const cellUsuario = document.createElement('td');
+          cellUsuario.textContent = item['Usuario Creador'] || '';
+          row.appendChild(cellUsuario);
+          
+          // Carpeta Fiscal
+          const cellCarpeta = document.createElement('td');
+          cellCarpeta.textContent = item['Carpeta Fiscal'] || '';
+          row.appendChild(cellCarpeta);
+          
+          // Fiscalía
+          const cellFiscalia = document.createElement('td');
+          cellFiscalia.textContent = item['Fiscalía'] || '';
+          row.appendChild(cellFiscalia);
+          
+          // Unidad de Inteligencia
+          const cellUnidad = document.createElement('td');
+          cellUnidad.textContent = item['Unidad de Inteligencia'] || '';
+          row.appendChild(cellUnidad);
+          
+          // Acciones
+          const cellActions = document.createElement('td');
+          cellActions.innerHTML = `
+            <button class="btn btn-sm btn-info btn-action me-1" onclick="verDetalle('${item.ID}')">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-warning btn-action me-1" onclick="editarRegistro('${item.ID}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger btn-action" onclick="eliminarRegistro('${item.ID}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          `;
+          row.appendChild(cellActions);
+          
+          tableBody.appendChild(row);
+        });
+      }
+      
+      // Función para ver detalles de un registro
+      function verDetalle(id) {
+        window.location.href = `<?= ScriptApp.getService().getUrl(); ?>?action=detalle&id=${id}`;
+      }
+      
+      // Función para editar un registro
+      function editarRegistro(id) {
+        window.location.href = `<?= ScriptApp.getService().getUrl(); ?>?action=formulario&id=${id}`;
+      }
+      
+      // Función para eliminar un registro
+      function eliminarRegistro(id) {
+        if (confirm('¿Está seguro que desea eliminar este registro?')) {
+          showLoading();
+          google.script.run
+            .withSuccessHandler(function(result) {
+              hideLoading();
+              if (result.success) {
+                alert('Registro eliminado correctamente');
+                cargarHistorial();
+              } else {
+                alert('Error al eliminar el registro: ' + result.message);
+              }
+            })
+            .withFailureHandler(function(error) {
+              hideLoading();
+              alert('Error al eliminar el registro: ' + error.message);
+            })
+            .deleteCaso(id);
+        }
+      }
+      
+      // Función para descargar archivo
+      function downloadFile(base64Data, fileName, mimeType) {
+        const a = document.createElement('a');
+        a.href = `data:${mimeType};base64,${base64Data}`;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      
+      // Función para mostrar indicador de carga
+      function showLoading() {
+        loadingIndicator.style.display = 'flex';
+      }
+      
+      // Función para ocultar indicador de carga
+      function hideLoading() {
+        loadingIndicator.style.display = 'none';
+      }
+    </script>
+  </body>
+</html>
